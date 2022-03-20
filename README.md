@@ -1,4 +1,4 @@
-# Teletask Home Assistant Integration
+# SPHA - SixPack Home Automation Home Assistant Integration
 
 Only supports lights (relay) at the moment. Use with <https://github.com/sillevl/teletask-mqtt/>
 
@@ -8,15 +8,18 @@ Example configuration for `configuration.yaml`
 
 ```yaml
 # Enable the integration by adding a 'teletask_sillevl' object
-teletask_sillevl:
+spha:
 
 light:
-  - platform: teletask_sillevl
+  - platform: spha
     name: Aanbouw
-    number: 47
-  - platform: teletask_sillevl
+    module_id: 47
+    relay: 1
+  - platform: spha
     name: Bureau
-    number: 46
-  - platform: teletask_sillevl
-    number: 48
+    module_id: 46
+    relay: 2
+  - platform: spha
+    module_id: 48
+    relay: 3
 ```

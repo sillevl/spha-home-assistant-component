@@ -1,10 +1,14 @@
 import asyncio
 import logging
+import json
 from homeassistant.components import mqtt
 from homeassistant.components.light import LightEntity
+from homeassistant.core import HomeAssistant
 
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType
 
 TURN_ON_PAYLOAD = "on"
 TURN_OFF_PAYLOAD = "off"
@@ -13,40 +17,46 @@ _LOGGER = logging.getLogger(__name__)
 
 CONF_PLATFORM = "platform"
 CONF_NAME = "name"
-CONF_NUMBER = "number"
-DEFAULT_NAME = "Teletask Light"
+CONF_MODULE_ID = "module_id"
+CONF_RELAY = "relay"
+DEFAULT_NAME = "SPHA Light"
 
 PLATFORM_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_PLATFORM): cv.string,
-        vol.Required(CONF_NUMBER): cv.positive_int,
+        vol.Required(CONF_MODULE_ID): cv.string,
+        vol.Required(CONF_RELAY): cv.positive_int,
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     }
 )
 
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    add_entities([TeletaskLight(config, hass.components.mqtt)])
+def setup_platform(hass: HomeAssistant, config: ConfigType, add_entities: AddEntitiesCallback, discovery_info=None) -> None:
+    add_entities([SphaLight(config, hass.components.mqtt, hass)])
 
 
-class TeletaskLight(LightEntity):
-    def __init__(self, config, mqtt):
+class SphaLight(LightEntity):
+    def __init__(self, config, mqtt, hass):
+        self._hass = hass
         self._mqtt = mqtt
         self._is_on = False
         self._state = None
         self._name = (
             config["name"]
             if config["name"] != DEFAULT_NAME
-            else config["name"] + " " + str(config["number"])
+            else config["name"] + " " + str(config["module_id"] + "." + str(config["relay"]))
         )
-        self._number = config["number"]
+        self._module_id = config["module_id"]
+        self._relay = config["relay"]
         # TODO: make first part topic configurable
-        self._state_topic = "teletask/relay/{number}".format(number=self._number)
-        self._command_topic = "teletask/relay/{number}/set".format(number=self._number)
+
+        self._state_topic = "sixpack/event/relay/{module_id}/{relay}".format(module_id=self._module_id, relay=self._relay)
+        self._command_topic = "sixpack/action/relay/{module_id}/{relay}".format(module_id=self._module_id, relay=self._relay)
 
         def message_received(topic, payload, qos):
             """A new MQTT message has been received."""
-            self._state = payload == TURN_ON_PAYLOAD
+            message = json.loads(payload)
+            self._state = message["state"] == TURN_ON_PAYLOAD
             self.schedule_update_ha_state()
 
         self._mqtt.subscribe(self._state_topic, message_received)
@@ -59,7 +69,7 @@ class TeletaskLight(LightEntity):
     @property
     def unique_id(self):
         # TODO: get first part from domain
-        return "teletask_sillevl.light.{number}".format(number=self._number)
+        return "spha.light.{module_id}.{relay}".format(module_id=self._module_id, relay=self._relay)
 
     @property
     def is_on(self):
@@ -68,8 +78,10 @@ class TeletaskLight(LightEntity):
 
     def turn_off(self, **kwargs):
         """Turn the device off."""
-        self._mqtt.publish(self._command_topic, TURN_OFF_PAYLOAD)
+        payload = { 'state': TURN_OFF_PAYLOAD}
+        self._mqtt.publish(hass = self._hass, topic = self._command_topic, payload = json.dumps(payload))
 
     def turn_on(self, **kwargs):
         """Turn the device on."""
-        self._mqtt.publish(self._command_topic, TURN_ON_PAYLOAD)
+        payload = { 'state': TURN_ON_PAYLOAD}
+        self._mqtt.publish(hass = self._hass, topic = self._command_topic, payload = json.dumps(payload))
