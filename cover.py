@@ -100,13 +100,14 @@ class SphaCover(CoverEntity):
 
         self._attr_is_closed = False
 
-        self._open_relay = Relay(
-            {"module_id": self._module_id, "relay": (self._channel * 2) + 0},
+        self._close_relay = Relay(
+            {"module_id": self._module_id, "relay": ((self._channel - 1) * 2) + 0},
             self._mqtt,
             self._hass,
         )
-        self._close_relay = Relay(
-            {"module_id": self._module_id, "relay": (self._channel * 2) + 1},
+
+        self._open_relay = Relay(
+            {"module_id": self._module_id, "relay": ((self._channel - 1) * 2) + 1},
             self._mqtt,
             self._hass,
         )
@@ -116,6 +117,18 @@ class SphaCover(CoverEntity):
         #         | CoverEntityFeature.CLOSE
         #         | CoverEntityFeature.STOP
         #     )
+
+    @property
+    def supported_features(self) -> int:
+        """Flag supported features."""
+        if self._attr_supported_features is not None:
+            return self._attr_supported_features
+
+        supported_features = (
+            CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
+        )
+
+        return supported_features
 
     @property
     def name(self):
