@@ -64,14 +64,13 @@ class SphaLight(LightEntity):
             module_id=self._module_id, relay=self._relay
         )
 
-    async def async_init(self):
         def message_received(topic, payload, qos):
             """A new MQTT message has been received."""
             message = json.loads(payload)
             self._state = message["state"] == TURN_ON_PAYLOAD
             self.schedule_update_ha_state()
 
-        self._mqtt.async_subscribe(self._state_topic, message_received)
+        self._mqtt.subscribe(self._state_topic, message_received)
 
     @property
     def name(self):
