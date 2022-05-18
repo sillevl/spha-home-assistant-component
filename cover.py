@@ -88,6 +88,7 @@ class SphaCover(CoverEntity):
         self._mqtt = mqtt
         self._is_on = False
         self._state = None
+        self.optimistic = True
         self._name = (
             config["name"]
             if config["name"] != DEFAULT_NAME
@@ -118,17 +119,17 @@ class SphaCover(CoverEntity):
         #         | CoverEntityFeature.STOP
         #     )
 
-    @property
-    def supported_features(self) -> int:
-        """Flag supported features."""
-        if self._attr_supported_features is not None:
-            return self._attr_supported_features
+    # @property
+    # def supported_features(self) -> int:
+    #     """Flag supported features."""
+    #     if self._attr_supported_features is not None:
+    #         return self._attr_supported_features
 
-        supported_features = (
-            CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
-        )
+    #     supported_features = (
+    #         CoverEntityFeature.OPEN | CoverEntityFeature.CLOSE | CoverEntityFeature.STOP
+    #     )
 
-        return supported_features
+    #     return supported_features
 
     @property
     def name(self):
