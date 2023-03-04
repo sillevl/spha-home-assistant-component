@@ -69,7 +69,8 @@ class SphaLight(LightEntity):
             """A new MQTT message has been received."""
             message = json.loads(msg.payload)
             self._state = message["state"] == TURN_ON_PAYLOAD
-            self.schedule_update_ha_state()
+            if(self.hass):
+                self.schedule_update_ha_state()
 
         self._mqtt.subscribe(self._state_topic, message_received)
 
