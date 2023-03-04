@@ -3,6 +3,7 @@ import logging
 import json
 from homeassistant.components import mqtt
 from homeassistant.components.light import LightEntity
+from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.core import HomeAssistant
 
 import voluptuous as vol
@@ -64,9 +65,9 @@ class SphaLight(LightEntity):
             module_id=self._module_id, relay=self._relay
         )
 
-        def message_received(topic, payload, qos):
+        def message_received(msg: ReceiveMessage):
             """A new MQTT message has been received."""
-            message = json.loads(payload)
+            message = json.loads(msg.payload)
             self._state = message["state"] == TURN_ON_PAYLOAD
             self.schedule_update_ha_state()
 
