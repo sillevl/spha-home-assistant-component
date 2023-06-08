@@ -11,8 +11,6 @@ import asyncio
 # The domain of your component. Should be equal to the name of your component.
 DOMAIN = "teletask_sillevl"
 
-
-@asyncio.coroutine
 async def async_setup(hass, config):
     # print(config[DOMAIN]["light"])
     return True
