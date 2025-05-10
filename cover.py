@@ -38,7 +38,7 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info=None,
 ) -> None:
-    add_entities([SphaCover(config, hass.components.mqtt, hass)])
+    add_entities([SphaCover(config, mqtt, hass)])
 
 
 class Relay(SwitchEntity):
@@ -65,7 +65,7 @@ class Relay(SwitchEntity):
             self._state = message["state"] == TURN_ON_PAYLOAD
             self.schedule_update_ha_state()
 
-        self._mqtt.async_subscribe(self._state_topic, message_received)
+        self._mqtt.async_subscribe(self._hass, self._state_topic, message_received)
 
     def turn_on(self, **kwargs) -> None:
         self._mqtt.publish(
