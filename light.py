@@ -38,7 +38,7 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info=None,
 ) -> None:
-    add_entities([SphaLight(config, hass.components.mqtt, hass)])
+    add_entities([SphaLight(config, mqtt, hass)])
 
 
 class SphaLight(LightEntity):
@@ -72,7 +72,7 @@ class SphaLight(LightEntity):
             if(self.hass):
                 self.schedule_update_ha_state()
 
-        self._mqtt.subscribe(self._state_topic, message_received)
+        self._mqtt.subscribe(self._hass, self._state_topic, message_received)
 
     @property
     def name(self):
