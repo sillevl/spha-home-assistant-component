@@ -38,7 +38,7 @@ def setup_platform(
     add_entities: AddEntitiesCallback,
     discovery_info=None,
 ) -> None:
-    add_entities([SphaLight(config, hass.components.mqtt, hass)])
+    add_entities([SphaLight(config, mqtt, hass)])
 
 
 class SphaLight(LightEntity):
