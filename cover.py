@@ -51,15 +51,15 @@ class Relay:
             module_id=self._module_id, relay=self._relay
         )
 
-    def turn_on(self, **kwargs) -> None:
-        mqtt.publish(
+    async def async_turn_on(self, **kwargs) -> None:
+        await mqtt.async_publish(
             hass=self._hass,
             topic=self._command_topic,
             payload=json.dumps({"state": TURN_ON_PAYLOAD}),
         )
 
-    def turn_off(self, **kwargs) -> None:
-        mqtt.publish(
+    async def async_turn_off(self, **kwargs) -> None:
+        await mqtt.async_publish(
             hass=self._hass,
             topic=self._command_topic,
             payload=json.dumps({"state": TURN_OFF_PAYLOAD}),
@@ -109,25 +109,25 @@ class SphaCover(CoverEntity):
     def unique_id(self):
         return self._attr_unique_id
 
-    def open_cover(self, **kwargs) -> None:
-        self._open_relay.turn_on()
-        self._close_relay.turn_off()
+    async def async_open_cover(self, **kwargs) -> None:
+        await self._open_relay.async_turn_on()
+        await self._close_relay.async_turn_off()
         self._attr_is_opening = True
         self._attr_is_closing = False
         self._attr_is_closed = False
         self.async_write_ha_state()
 
-    def close_cover(self, **kwargs) -> None:
-        self._open_relay.turn_off()
-        self._close_relay.turn_on()
+    async def async_close_cover(self, **kwargs) -> None:
+        await self._open_relay.async_turn_off()
+        await self._close_relay.async_turn_on()
         self._attr_is_opening = False
         self._attr_is_closing = True
         self._attr_is_closed = True
         self.async_write_ha_state()
 
-    def stop_cover(self, **kwargs) -> None:
-        self._open_relay.turn_off()
-        self._close_relay.turn_off()
+    async def async_stop_cover(self, **kwargs) -> None:
+        await self._open_relay.async_turn_off()
+        await self._close_relay.async_turn_off()
         self._attr_is_opening = False
         self._attr_is_closing = False
         self.async_write_ha_state()

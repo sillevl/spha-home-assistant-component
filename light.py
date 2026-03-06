@@ -4,7 +4,7 @@ import logging
 from homeassistant.components import mqtt
 from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.components.mqtt.models import ReceiveMessage
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
@@ -80,6 +80,7 @@ class SphaLight(LightEntity):
             self._unsub_state()
             self._unsub_state = None
 
+    @callback
     def _message_received(self, msg: ReceiveMessage):
         """Handle MQTT state updates."""
         parsed_state = parse_relay_state_payload(msg.payload)
