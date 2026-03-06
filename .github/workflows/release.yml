@@ -30,12 +30,7 @@ jobs:
       - name: Read current version
         id: current
         run: |
-          version=$(python - <<'PY'
-          import json
-          with open("manifest.json", encoding="utf-8") as manifest_file:
-              print(json.load(manifest_file)["version"])
-          PY
-          )
+          version=$(python -c "import json; print(json.load(open('manifest.json', encoding='utf-8'))['version'])")
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Read previous version
@@ -45,12 +40,7 @@ jobs:
           before="${{ github.event.before }}"
 
           if git cat-file -e "${before}:manifest.json" 2>/dev/null; then
-            version=$(git show "${before}:manifest.json" | python - <<'PY'
-            import json
-            import sys
-            print(json.load(sys.stdin)["version"])
-            PY
-            )
+            version=$(git show "${before}:manifest.json" | python -c "import json,sys; print(json.load(sys.stdin)['version'])")
           else
             version=""
           fi
