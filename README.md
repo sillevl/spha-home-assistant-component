@@ -1,13 +1,17 @@
 # SPHA - SixPack Home Automation Home Assistant Integration
 
-Only supports lights (relay) at the moment. Use with <https://github.com/sillevl/teletask-mqtt/>
+Supports:
+- Lights (single relay)
+- Covers (paired relays per channel)
+
+Use with <https://github.com/sillevl/teletask-mqtt/>.
 
 ## Configuration
 
 Example configuration for `configuration.yaml`
 
 ```yaml
-# Enable the integration by adding a 'teletask_sillevl' object
+# Enable the integration root object
 spha:
 
 light:
@@ -22,4 +26,24 @@ light:
   - platform: spha
     module_id: 48
     relay: 3
+
+cover:
+  - platform: spha
+    name: Living Room Shutter
+    module_id: 47
+    channel: 1
+```
+
+## Testing
+
+Install test dependencies:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+Run tests:
+
+```bash
+pytest -q
 ```

@@ -1,0 +1,111 @@
+name: Release on Version Bump
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - manifest.json
+  workflow_dispatch:
+    inputs:
+      prerelease:
+        description: Mark release as pre-release
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read current version
+        id: current
+        run: |
+          version=$(python - <<'PY'
+          import json
+          with open("manifest.json", encoding="utf-8") as manifest_file:
+              print(json.load(manifest_file)["version"])
+          PY
+          )
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Read previous version
+        id: previous
+        if: github.event_name == 'push'
+        run: |
+          before="${{ github.event.before }}"
+
+          if git cat-file -e "${before}:manifest.json" 2>/dev/null; then
+            version=$(git show "${before}:manifest.json" | python - <<'PY'
+            import json
+            import sys
+            print(json.load(sys.stdin)["version"])
+            PY
+            )
+          else
+            version=""
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Determine release eligibility
+        id: eligibility
+        run: |
+          current="${{ steps.current.outputs.version }}"
+          previous="${{ steps.previous.outputs.version }}"
+          manual_prerelease="${{ github.event.inputs.prerelease || 'false' }}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            should_release="true"
+          elif [ -n "$current" ] && [ "$current" != "$previous" ]; then
+            should_release="true"
+          else
+            should_release="false"
+          fi
+
+          prerelease="false"
+          if [[ "$current" == *-* ]]; then
+            prerelease="true"
+          fi
+
+          if [ "$manual_prerelease" = "true" ]; then
+            prerelease="true"
+          fi
+
+          echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "tag=v$current" >> "$GITHUB_OUTPUT"
+
+      - name: Check existing tag
+        id: tag_exists
+        if: steps.eligibility.outputs.should_release == 'true'
+        run: |
+          if git rev-parse "${{ steps.eligibility.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        if: steps.eligibility.outputs.should_release == 'true' && steps.tag_exists.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.eligibility.outputs.tag }}
+          name: ${{ steps.eligibility.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          generate_release_notes: true
+          prerelease: ${{ steps.eligibility.outputs.prerelease == 'true' }}
+
+      - name: Skip summary
+        if: steps.eligibility.outputs.should_release != 'true' || steps.tag_exists.outputs.exists == 'true'
+        run: |
+          echo "Release skipped. should_release=${{ steps.eligibility.outputs.should_release }}, tag_exists=${{ steps.tag_exists.outputs.exists }}"
