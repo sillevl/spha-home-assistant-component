@@ -2,7 +2,7 @@ import asyncio
 import logging
 import json
 from homeassistant.components import mqtt
-from homeassistant.components.light import LightEntity
+from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.core import HomeAssistant
 
@@ -46,7 +46,9 @@ class SphaLight(LightEntity):
         self._hass = hass
         self._mqtt = mqtt
         self._is_on = False
-        self._state = None
+        self._state = False
+        self._attr_supported_color_modes = {ColorMode.ONOFF}
+        self._attr_color_mode = ColorMode.ONOFF
         self._name = (
             config["name"]
             if config["name"] != DEFAULT_NAME
