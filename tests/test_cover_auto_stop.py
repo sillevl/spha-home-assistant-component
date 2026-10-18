@@ -7,6 +7,8 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
+from const import COVER_AUTO_STOP_TIMEOUT_SECONDS
+
 
 @pytest.fixture
 def cover():
@@ -21,7 +23,11 @@ def cover():
     )
     base = type("CoverEntity", (), {"async_will_remove_from_hass": AsyncMock()})
     schedule = Mock()
-    namespace = {"CoverEntity": base, "async_call_later": schedule}
+    namespace = {
+        "CoverEntity": base,
+        "async_call_later": schedule,
+        "COVER_AUTO_STOP_TIMEOUT_SECONDS": COVER_AUTO_STOP_TIMEOUT_SECONDS,
+    }
     exec(compile(ast.Module(body=[entity], type_ignores=[]), "cover.py", "exec"), namespace)
     instance = object.__new__(namespace["SphaCover"])
     instance._hass = object()
@@ -33,7 +39,7 @@ def cover():
 
 
 @pytest.mark.parametrize("direction", ["open", "close"])
-def test_movement_stops_both_relays_after_60_seconds(cover, direction):
+def test_movement_stops_both_relays_after_35_seconds(cover, direction):
     instance, schedule = cover
 
     async def scenario():
@@ -41,7 +47,7 @@ def test_movement_stops_both_relays_after_60_seconds(cover, direction):
         schedule.assert_called_once()
         hass, delay, callback = schedule.call_args.args
         assert hass is instance._hass
-        assert delay == 60
+        assert delay == COVER_AUTO_STOP_TIMEOUT_SECONDS == 35
         assert instance._attr_is_opening == (direction == "open")
         assert instance._attr_is_closing == (direction == "close")
         instance._open_relay.async_turn_off.reset_mock()

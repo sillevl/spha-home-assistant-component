@@ -36,7 +36,7 @@ cover:
 
 ### Cover automatic stop
 
-Opening or closing a cover automatically switches both relays off after 60 seconds
+Opening or closing a cover automatically switches both relays off after 35 seconds
 and clears its opening/closing status. Each new Open or Close command restarts
 the timer; Stop switches both relays off immediately and cancels the timer.
 Position remains optimistic because the covers provide no feedback.

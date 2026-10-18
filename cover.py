@@ -11,6 +11,7 @@ from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
+    COVER_AUTO_STOP_TIMEOUT_SECONDS,
     CONF_CHANNEL,
     CONF_MODULE_ID,
     CONF_NAME,
@@ -121,7 +122,9 @@ class SphaCover(CoverEntity):
             self._cancel_auto_stop = None
             await self.async_stop_cover()
 
-        self._cancel_auto_stop = async_call_later(self._hass, 60, auto_stop)
+        self._cancel_auto_stop = async_call_later(
+            self._hass, COVER_AUTO_STOP_TIMEOUT_SECONDS, auto_stop
+        )
 
     async def async_will_remove_from_hass(self) -> None:
         self._cancel_stop_timer()
