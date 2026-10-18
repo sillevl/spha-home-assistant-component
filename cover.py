@@ -7,6 +7,7 @@ from homeassistant.core import HomeAssistant
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -87,6 +88,7 @@ class SphaCover(CoverEntity):
         self._attr_is_closed = False
         self._attr_is_opening = False
         self._attr_is_closing = False
+        self._cancel_auto_stop = None
 
         close_relay, open_relay = cover_channel_relays(self._channel)
 
@@ -109,23 +111,44 @@ class SphaCover(CoverEntity):
     def unique_id(self):
         return self._attr_unique_id
 
+    def _cancel_stop_timer(self) -> None:
+        if self._cancel_auto_stop is not None:
+            self._cancel_auto_stop()
+            self._cancel_auto_stop = None
+
+    def _schedule_auto_stop(self) -> None:
+        async def auto_stop(_now):
+            self._cancel_auto_stop = None
+            await self.async_stop_cover()
+
+        self._cancel_auto_stop = async_call_later(self._hass, 60, auto_stop)
+
+    async def async_will_remove_from_hass(self) -> None:
+        self._cancel_stop_timer()
+        await super().async_will_remove_from_hass()
+
     async def async_open_cover(self, **kwargs) -> None:
-        await self._open_relay.async_turn_on()
+        self._cancel_stop_timer()
         await self._close_relay.async_turn_off()
+        await self._open_relay.async_turn_on()
+        self._schedule_auto_stop()
         self._attr_is_opening = True
         self._attr_is_closing = False
         self._attr_is_closed = False
         self.async_write_ha_state()
 
     async def async_close_cover(self, **kwargs) -> None:
+        self._cancel_stop_timer()
         await self._open_relay.async_turn_off()
         await self._close_relay.async_turn_on()
+        self._schedule_auto_stop()
         self._attr_is_opening = False
         self._attr_is_closing = True
         self._attr_is_closed = True
         self.async_write_ha_state()
 
     async def async_stop_cover(self, **kwargs) -> None:
+        self._cancel_stop_timer()
         await self._open_relay.async_turn_off()
         await self._close_relay.async_turn_off()
         self._attr_is_opening = False

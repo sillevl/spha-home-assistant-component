@@ -34,6 +34,17 @@ cover:
     channel: 1
 ```
 
+### Cover automatic stop
+
+Opening or closing a cover automatically switches both relays off after 60 seconds
+and clears its opening/closing status. Each new Open or Close command restarts
+the timer; Stop switches both relays off immediately and cancels the timer.
+Position remains optimistic because the covers provide no feedback.
+
+The timer runs in Home Assistant, not in the relay hardware. It cannot guarantee
+switch-off if Home Assistant stops or MQTT communication fails; use a hardware
+or controller-side timeout if a guaranteed cutoff is required.
+
 ## Testing
 
 Install test dependencies:
