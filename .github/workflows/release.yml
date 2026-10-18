@@ -75,18 +75,29 @@ jobs:
           echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
           echo "tag=v$current" >> "$GITHUB_OUTPUT"
 
-      - name: Check existing tag
-        id: tag_exists
+      - name: Check existing release
+        id: release_exists
         if: steps.eligibility.outputs.should_release == 'true'
-        run: |
-          if git rev-parse "${{ steps.eligibility.outputs.tag }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+        uses: actions/github-script@v7
+        env:
+          RELEASE_TAG: ${{ steps.eligibility.outputs.tag }}
+        with:
+          script: |
+            try {
+              await github.rest.repos.getReleaseByTag({
+                ...context.repo,
+                tag: process.env.RELEASE_TAG,
+              });
+              return true;
+            } catch (error) {
+              if (error.status === 404) {
+                return false;
+              }
+              throw error;
+            }
 
       - name: Create GitHub Release
-        if: steps.eligibility.outputs.should_release == 'true' && steps.tag_exists.outputs.exists == 'false'
+        if: steps.eligibility.outputs.should_release == 'true' && steps.release_exists.outputs.result == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.eligibility.outputs.tag }}
@@ -96,6 +107,6 @@ jobs:
           prerelease: ${{ steps.eligibility.outputs.prerelease == 'true' }}
 
       - name: Skip summary
-        if: steps.eligibility.outputs.should_release != 'true' || steps.tag_exists.outputs.exists == 'true'
+        if: steps.eligibility.outputs.should_release != 'true' || steps.release_exists.outputs.result == 'true'
         run: |
-          echo "Release skipped. should_release=${{ steps.eligibility.outputs.should_release }}, tag_exists=${{ steps.tag_exists.outputs.exists }}"
+          echo "Release skipped. should_release=${{ steps.eligibility.outputs.should_release }}, release_exists=${{ steps.release_exists.outputs.result }}"
